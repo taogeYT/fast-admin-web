@@ -1,20 +1,11 @@
 import { Form, Input, Modal, Radio, Tree } from 'antd';
 import React, { useState } from 'react';
 
-type RoleData = {
-  id: number;
-  roleName: string;
-  roleCode: string;
-  sort: number;
-  status: string;
-  permissions: string[];
-};
-
 type EditRoleModalProps = {
   visible: boolean;
   onCancel: () => void;
-  onSave: (role: RoleData) => void;
-  roleData: RoleData;
+  onSave: (role: Role.RoleData) => void;
+  roleData: Role.RoleItem;
 };
 
 const treeData = [
@@ -55,7 +46,7 @@ const treeData = [
 ];
 
 const EditRoleModal: React.FC<EditRoleModalProps> = ({ visible, onCancel, onSave, roleData }) => {
-  const [form] = Form.useForm<RoleData>();
+  const [form] = Form.useForm<Role.RoleData>();
 
   const [checkedKeys, setCheckedKeys] = useState<string[]>(roleData.permissions || []);
 
@@ -68,6 +59,7 @@ const EditRoleModal: React.FC<EditRoleModalProps> = ({ visible, onCancel, onSave
       const updatedRole = {
         ...values,
         id: roleData.id,
+        data_scope: 1,
         permissions: checkedKeys,
       };
       onSave(updatedRole);
@@ -79,14 +71,14 @@ const EditRoleModal: React.FC<EditRoleModalProps> = ({ visible, onCancel, onSave
       <Form form={form} layout="vertical" initialValues={roleData}>
         <Form.Item
           label="角色名称"
-          name="roleName"
+          name="name"
           rules={[{ required: true, message: '请输入角色名称' }]}
         >
           <Input />
         </Form.Item>
         <Form.Item
           label="角色编码"
-          name="roleCode"
+          name="code"
           rules={[{ required: true, message: '请输入角色编码' }]}
         >
           <Input />
@@ -96,8 +88,8 @@ const EditRoleModal: React.FC<EditRoleModalProps> = ({ visible, onCancel, onSave
         </Form.Item>
         <Form.Item label="状态" name="status" rules={[{ required: true, message: '请选择状态' }]}>
           <Radio.Group>
-            <Radio value="启用">启用</Radio>
-            <Radio value="禁用">禁用</Radio>
+            <Radio value={1}>启用</Radio>
+            <Radio value={0}>禁用</Radio>
           </Radio.Group>
         </Form.Item>
         <Form.Item label="菜单权限">

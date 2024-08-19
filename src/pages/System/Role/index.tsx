@@ -1,30 +1,10 @@
-import { PageContainer, ProColumns, ProTable } from '@ant-design/pro-components';
+import { create_role, query_role, update_role } from '@/services/api/role';
+import { ActionType, PageContainer, ProColumns, ProTable } from '@ant-design/pro-components';
 import { Button, Popconfirm, Space } from 'antd';
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import EditRoleModal from './components/EditRoleModal';
 
-type RoleData = {
-  id: number;
-  roleName: string;
-  roleCode: string;
-  dataScope: string;
-  tenantName: string;
-  sort: number;
-  status: string;
-};
-
-const dataSource: RoleData[] = [
-  {
-    id: 1,
-    roleName: '系统管理员',
-    roleCode: 'sys_admin',
-    dataScope: '全部数据',
-    tenantName: 'XXX公司',
-    sort: 100,
-    status: '启用',
-  },
-  // 其他数据...
-];
+type RoleData = Role.RoleItem;
 
 const handleDelete = (id: number): void => {
   console.log('Delete role with ID:', id);
@@ -33,6 +13,7 @@ const handleDelete = (id: number): void => {
 const RoleManagement: React.FC = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedRole, setSelectedRole] = useState<RoleData | null>(null);
+  const ref = useRef<ActionType>();
   const columns: ProColumns<RoleData>[] = [
     {
       title: '序号',
@@ -42,46 +23,57 @@ const RoleManagement: React.FC = () => {
     },
     {
       title: '角色名称',
-      dataIndex: 'roleName',
-      key: 'roleName',
+      dataIndex: 'name',
+      key: 'name',
     },
     {
       title: '角色编码',
-      dataIndex: 'roleCode',
-      key: 'roleCode',
+      dataIndex: 'code',
+      key: 'code',
     },
     {
       title: '数据范围',
-      dataIndex: 'dataScope',
-      key: 'dataScope',
+      dataIndex: 'data_scope',
+      key: 'data_scope',
+      hideInSearch: true,
+      valueEnum: {
+        1: { text: <span>全部数据</span> },
+        2: { text: <span>部门数据</span> },
+      },
     },
     {
       title: '租户名称',
       dataIndex: 'tenantName',
       key: 'tenantName',
+      hideInSearch: true,
     },
     {
       title: '排序',
       dataIndex: 'sort',
       key: 'sort',
       valueType: 'digit',
+      hideInSearch: true,
     },
     {
       title: '状态',
       dataIndex: 'status',
       key: 'status',
-      render: (text: string) => (
-        <span style={{ color: text === '启用' ? 'green' : 'red' }}>{text}</span>
-      ),
+      hideInSearch: true,
+      valueEnum: {
+        1: { text: <span style={{ color: 'green' }}>启用</span> },
+        0: { text: <span style={{ color: 'red' }}>停用</span> },
+      },
     },
     {
       title: '修改记录',
       key: 'details',
+      hideInSearch: true,
       render: (_: any, record: RoleData) => <a href={`/details/${record.id}`}>详情</a>,
     },
     {
       title: '操作',
       key: 'action',
+      hideInSearch: true,
       render: (_: any, record: RoleData) => (
         <Space size="middle">
           <Popconfirm title="确定要删除这个角色吗?" onConfirm={() => handleDelete(record.id)}>
@@ -102,31 +94,54 @@ const RoleManagement: React.FC = () => {
     },
   ];
 
-  const handleSave = (updatedRole: RoleData) => {
-    console.log('Updated Role:', updatedRole);
+  const handleSave = async (data: RoleData) => {
+    if (data.id > 0) {
+      console.log('Updated Role:', data);
+      await update_role(data.id, data);
+    } else {
+      console.log('New Role:', data);
+      await create_role(data);
+    }
     setModalVisible(false);
     // 在这里你可以更新角色列表数据
+    await ref.current?.reload();
   };
 
   return (
     <PageContainer>
       <ProTable<RoleData>
+        actionRef={ref}
         columns={columns}
-        dataSource={dataSource}
+        request={query_role}
         rowKey="id"
         search={{
           labelWidth: 'auto',
-          optionRender: ({ searchText, resetText }, { form }) => [
-            <Button key="search" type="primary">
-              {searchText}
-            </Button>,
-            <Button key="reset" onClick={() => form?.resetFields()}>
-              {resetText}
-            </Button>,
-          ],
+          // optionRender: ({ searchText, resetText }, { form }) => [
+          //   <Button key="search" type="primary">
+          //     {searchText}
+          //   </Button>,
+          //   <Button key="reset" onClick={() => form?.resetFields()}>
+          //     {resetText}
+          //   </Button>,
+          // ],
         }}
         toolBarRender={() => [
-          <Button key="button" type="primary">
+          <Button
+            key="button"
+            type="primary"
+            onClick={async () => {
+              setSelectedRole({
+                id: 0,
+                name: '',
+                code: '',
+                data_scope: 1,
+                tenantName: '',
+                sort: 100,
+                status: 1,
+              });
+              setModalVisible(true);
+            }}
+          >
             新增
           </Button>,
           <Button key="button">设置基础接口资源</Button>,
